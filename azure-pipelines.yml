@@ -14,6 +14,13 @@ steps:
   inputs:
     restoreSolution: '**/*.sln'
 
+- powershell: |
+    (Get-Content appsettings.json) -replace '\$\{CONNECTION_STRING\}', '$(CONNECTION_STRING)' | Set-Content appsettings.json
+    (Get-Content appsettings.json) -replace '\$\{DATABASE\}', '$(DATABASE)' | Set-Content appsettings.json
+    (Get-Content appsettings.json) -replace '\$\{USERNAME\}', '$(USERNAME)' | Set-Content appsettings.json
+    (Get-Content appsettings.json) -replace '\$\{PASSWORD\}', '$(PASSWORD)' | Set-Content appsettings.json
+  displayName: 'Replace placeholder variables in appsettings.json'
+
 - task: VSBuild@1
   inputs:
     solution: '**/*.sln'
