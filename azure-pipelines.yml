@@ -1,0 +1,49 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  buildConfiguration: 'Release'
+
+steps:
+- task: NuGetToolInstaller@1
+
+- task: NuGetCommand@2
+  inputs:
+    restoreSolution: '**/*.sln'
+
+- powershell: |
+    (Get-Content appsettings.json) -replace '\$\{CONNECTION_STRING\}', '$(CONNECTION_STRING)' | Set-Content appsettings.json
+    (Get-Content appsettings.json) -replace '\$\{DATABASE\}', '$(DATABASE)' | Set-Content appsettings.json
+    (Get-Content appsettings.json) -replace '\$\{USERNAME\}', '$(USERNAME)' | Set-Content appsettings.json
+    (Get-Content appsettings.json) -replace '\$\{PASSWORD\}', '$(PASSWORD)' | Set-Content appsettings.json
+  displayName: 'Replace placeholder variables in appsettings.json'
+
+- task: VSBuild@1
+  inputs:
+    solution: '**/*.sln'
+    msbuildArgs: '/p:OutputPath=$(Build.ArtifactStagingDirectory)'
+    platform: 'Any CPU'
+    configuration: '$(buildConfiguration)'
+
+- task: CopyFiles@2
+  inputs:
+    Contents: '**\appsettings.json'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+    OverWrite: true
+
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: '$(Build.ArtifactStagingDirectory)'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+    replaceExistingArchive: true
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
